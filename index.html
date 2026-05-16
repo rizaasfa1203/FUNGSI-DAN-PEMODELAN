@@ -425,11 +425,20 @@
                 // CRITICAL RULE 1: Strict Paths
                 quizCollection = collection(db, 'artifacts', appId, 'public', 'data', 'quiz_results');
 
-                // CRITICAL RULE 3: Auth Before Queries
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+                // CRITICAL RULE 3: Auth Before Queries dengan Fallback Login
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (authErr) {
+                    console.warn("Autentikasi utama gagal karena masalah jaringan/token, mencoba login anonim...", authErr);
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (anonErr) {
+                        console.error("Semua metode autentikasi gagal.", anonErr);
+                    }
                 }
 
                 onAuthStateChanged(auth, (user) => {
