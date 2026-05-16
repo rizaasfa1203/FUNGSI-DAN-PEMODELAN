@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Graph Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Konfigurasi Tailwind untuk mengubah tema menjadi Biru Muda -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyan: {
+                            50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc',
+                            400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1',
+                            800: '#075985', 900: '#0c4a6e',
+                        },
+                        purple: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+                            400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
+                            800: '#1e40af', 900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #dcfce7; /* Hijau muda */
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Abstract Math Background */
+        .bg-math {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(74, 222, 128, 0.4) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(34, 197, 94, 0.3) 0%, transparent 50%);
+            z-index: -1;
+            background-size: cover;
+        }
+        .math-grid {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+        }
+
+        /* Neon & Glassmorphism Utilities */
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .neon-border-cyan {
+            border: 1px solid #0ea5e9;
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.5), inset 0 0 10px rgba(14, 165, 233, 0.2);
+        }
+        .neon-border-purple {
+            border: 1px solid #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+        .neon-text-cyan {
+            color: #38bdf8;
+            text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+        }
+        .neon-text-purple {
+            color: #60a5fa;
+            text-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+        }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+        .floating { animation: float 4s ease-in-out infinite; }
+        
+        .fade-in { animation: fadeIn 0.5s forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Option Styling */
+        .quiz-option {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .quiz-option:hover {
+            transform: translateX(10px);
+            background: rgba(14, 165, 233, 0.15);
+            border-color: #0ea5e9;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
+        }
+        .quiz-option.selected {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+        }
+
+        /* Menyembunyikan Scrollbar untuk Tampilan Fullscreen Sempurna */
+        ::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+        * {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Confetti */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            z-index: 1000;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col items-center justify-center m-0 p-0 overflow-hidden">
+
+    <!-- Background -->
+    <div class="math-grid"></div>
+    <div class="bg-math"></div>
+
+    <!-- Custom Alert Modal -->
+    <div id="alert-modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
+        <div class="glass-card rounded-2xl p-8 max-w-sm w-full text-center fade-in neon-border-purple relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 to-cyan-500"></div>
+            <i id="alert-icon" class="fas fa-exclamation-triangle text-5xl text-yellow-400 mb-4 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]"></i>
+            <h3 id="alert-title" class="text-2xl font-bold mb-2">Peringatan</h3>
+            <p id="alert-message" class="text-gray-300 mb-6">Pesan peringatan di sini.</p>
+            <button onclick="closeAlert()" class="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold py-2 px-8 rounded-full transition-all shadow-[0_0_15px_rgba(139,92,246,0.4)] hover:shadow-[0_0_25px_rgba(6,182,212,0.6)]">
+                Mengerti
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="w-full h-full relative">
+        
+        <!-- =================== LOGIN VIEW =================== -->
+        <div id="login-view" class="glass-card w-full h-full p-8 md:p-12 relative overflow-y-auto fade-in flex flex-col justify-center border-0 rounded-none">
+            
+            <!-- Admin Login Button (Hidden icon) -->
+            <button id="btn-admin-access" class="absolute top-6 right-6 text-gray-500 hover:text-cyan-400 transition-colors text-2xl">
+                <i class="fas fa-lock"></i>
+            </button>
+
+            <div class="flex flex-col md:flex-row items-center justify-center gap-12 w-full max-w-6xl mx-auto flex-grow">
+                <!-- Mascot & Title -->
+                <div class="flex-1 text-center md:text-left flex flex-col items-center md:items-start">
+                    <!-- Pixar-style Math Robot SVG -->
+                    <div class="w-48 h-48 mb-6 floating drop-shadow-[0_0_20px_rgba(56,189,248,0.5)]">
+                        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Antenna -->
+                            <line x1="100" y1="50" x2="100" y2="20" stroke="#60a5fa" stroke-width="4"/>
+                            <circle cx="100" cy="15" r="8" fill="#38bdf8" class="animate-pulse"/>
+                            <!-- Head -->
+                            <rect x="50" y="50" width="100" height="80" rx="20" fill="#1e293b" stroke="#0ea5e9" stroke-width="4"/>
+                            <!-- Eyes (Display) -->
+                            <rect x="65" y="65" width="70" height="30" rx="10" fill="#0f172a" stroke="#3b82f6" stroke-width="2"/>
+                            <!-- Glowing Eyes -->
+                            <path d="M 75 80 Q 80 75 85 80" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" fill="none"/>
+                            <path d="M 115 80 Q 120 75 125 80" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" fill="none"/>
+                            <!-- Math Symbols -->
+                            <text x="60" y="115" fill="#60a5fa" font-size="16" font-family="monospace">∑</text>
+                            <text x="85" y="115" fill="#38bdf8" font-size="16" font-family="monospace">√x</text>
+                            <text x="120" y="115" fill="#60a5fa" font-size="16" font-family="monospace">π</text>
+                            <!-- Body -->
+                            <path d="M 70 130 L 130 130 L 140 180 L 60 180 Z" fill="#1e293b" stroke="#0ea5e9" stroke-width="4"/>
+                            <!-- Heart / Core -->
+                            <circle cx="100" cy="155" r="15" fill="none" stroke="#3b82f6" stroke-width="3"/>
+                            <circle cx="100" cy="155" r="8" fill="#38bdf8" class="animate-pulse"/>
+                        </svg>
+                    </div>
+                    
+                    <h1 class="text-4xl md:text-5xl font-bold mb-2 leading-tight">
+                        Math Graph <br>
+                        <span class="neon-text-cyan">Challenge</span>
+                    </h1>
+                    <p class="text-gray-400 text-lg mb-6">Kenali Grafik Fungsi & Uji Kemampuan Analisismu!</p>
+                </div>
+
+                <!-- Form -->
+                <div class="flex-1 w-full max-w-md bg-gray-900/50 p-6 rounded-2xl border border-gray-700">
+                    <h2 class="text-2xl font-semibold mb-6 neon-text-purple border-b border-gray-700 pb-2">Siap Memulai?</h2>
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Nama Lengkap</label>
+                            <div class="relative">
+                                <i class="fas fa-user absolute left-4 top-3.5 text-gray-500"></i>
+                                <input type="text" id="input-nama" placeholder="Masukkan nama..." class="w-full bg-gray-800 border border-gray-600 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-colors">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Kelas</label>
+                            <div class="relative">
+                                <i class="fas fa-graduation-cap absolute left-4 top-3.5 text-gray-500"></i>
+                                <input type="text" id="input-kelas" placeholder="Contoh: XII MIPA 1" class="w-full bg-gray-800 border border-gray-600 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-colors">
+                            </div>
+                        </div>
+                        <button id="btn-start" class="w-full mt-4 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl transition-all transform hover:scale-[1.02] shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                            MULAI KUIS <i class="fas fa-rocket ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Credit Footer -->
+            <div class="mt-8 text-center text-sm text-gray-400 border-t border-gray-700/50 pt-6 w-full max-w-6xl mx-auto pb-4">
+                created by : "Bu Riza Asfa, SMAN 2 Harau-Sumbar"
+            </div>
+        </div>
+
+        <!-- =================== QUIZ VIEW =================== -->
+        <div id="quiz-view" class="hidden glass-card w-full h-full relative overflow-hidden fade-in flex flex-col items-center border-0 rounded-none">
+            
+            <div class="w-full max-w-6xl flex flex-col h-full p-6 md:p-10">
+                <!-- Header (Progress & Timer) -->
+                <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-700/50">
+                    <div class="bg-gray-800 rounded-full h-4 w-full border border-gray-600 overflow-hidden">
+                        <div id="progress-bar" class="bg-gradient-to-r from-cyan-500 to-purple-500 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                    <span id="progress-text" class="text-sm font-semibold neon-text-cyan whitespace-nowrap">1/20</span>
+                </div>
+                <div class="flex items-center gap-2 bg-gray-800/80 px-4 py-2 rounded-lg border border-gray-600">
+                    <i class="fas fa-clock text-cyan-400"></i>
+                    <span id="timer" class="font-mono text-xl font-bold">25:00</span>
+                </div>
+            
+
+            <!-- Question Area (Scrollable) -->
+            <div class="flex-grow overflow-y-auto pb-4">
+                <div class="mb-4 inline-block bg-purple-900/40 text-purple-300 px-3 py-1 rounded-full text-xs font-bold border border-purple-500/30">
+                    <i class="fas fa-tag mr-1"></i> <span id="q-category">Kategori</span>
+                </div>
+                
+                <h3 id="q-text" class="text-xl md:text-2xl font-medium mb-6 leading-relaxed">
+                    Teks Pertanyaan...
+                </h3>
+
+                <!-- Optional Graph Container -->
+                <div id="q-visual-container" class="mb-8 hidden justify-center">
+                    <div class="bg-white rounded-xl p-2 w-full max-w-sm" id="q-visual-content">
+                        <!-- SVG injected here -->
+                    </div>
+                </div>
+
+                <!-- Options -->
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Buttons injected via JS -->
+                </div>
+            </div>
+
+            <!-- Navigation Footer -->
+            <div class="pt-4 border-t border-gray-700/50 flex justify-between items-center mt-4">
+                <button id="btn-prev" class="px-6 py-2.5 rounded-xl border border-gray-500 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors invisible">
+                    <i class="fas fa-chevron-left mr-2"></i> Sebelumnya
+                </button>
+                <button id="btn-next" class="px-6 py-2.5 rounded-xl bg-cyan-600/20 border border-cyan-500 text-cyan-300 hover:bg-cyan-600 hover:text-white transition-all shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+                    Selanjutnya <i class="fas fa-chevron-right ml-2"></i>
+                </button>
+                <button id="btn-finish" class="hidden px-8 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold transition-all shadow-[0_0_15px_rgba(167,139,250,0.5)] hover:scale-105 hover:shadow-[0_0_25px_rgba(167,139,250,0.8)]">
+                    SELESAI <i class="fas fa-check-circle ml-2"></i>
+                </button>
+            </div>
+            </div>
+        </div>
+
+        <!-- =================== RESULT VIEW =================== -->
+        <div id="result-view" class="hidden glass-card w-full h-full p-8 md:p-12 relative overflow-y-auto fade-in flex flex-col items-center justify-center text-center border-0 rounded-none">
+            
+            <div class="w-full max-w-4xl mx-auto">
+                <div id="result-mascot" class="w-40 h-40 mx-auto mb-8 floating drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                    <!-- Injected via JS based on score -->
+                </div>
+
+                <h2 class="text-3xl font-bold mb-2">Kuis Selesai!</h2>
+                <p id="result-name-class" class="text-gray-400 text-lg mb-8">Nama - Kelas</p>
+                
+            <div class="bg-gray-900/60 rounded-2xl p-6 border border-gray-700 inline-block w-full max-w-md mb-8 relative">
+                <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-cyan-500 to-purple-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg">
+                    SKOR AKHIR
+                </div>
+                <div class="text-6xl font-bold mb-2">
+                    <span id="result-score" class="neon-text-cyan">0</span><span class="text-2xl text-gray-500">/100</span>
+                </div>
+                <div id="result-predicate" class="text-xl font-semibold mt-2 text-yellow-400">Predikat</div>
+                
+                <div class="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-700">
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400">Jawaban Benar</div>
+                        <div class="text-2xl font-bold text-green-400"><i class="fas fa-check-circle mr-1 text-sm"></i> <span id="result-correct">0</span></div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400">Jawaban Salah</div>
+                        <div class="text-2xl font-bold text-red-400"><i class="fas fa-times-circle mr-1 text-sm"></i> <span id="result-incorrect">0</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <p id="result-message" class="text-lg font-medium text-purple-300 mb-8 italic">"Pesan motivasi di sini"</p>
+
+            <button id="btn-back-home" class="bg-gray-800 border border-gray-600 hover:border-cyan-400 hover:text-cyan-400 text-white font-bold py-3 px-8 rounded-full transition-all">
+                Kembali ke Beranda
+            </button>
+            </div>
+        </div>
+
+        <!-- =================== DASHBOARD VIEW (TEACHER) =================== -->
+        <div id="dashboard-view" class="hidden glass-card w-full h-full relative overflow-hidden fade-in flex flex-col items-center border-0 rounded-none">
+            <div class="w-full max-w-7xl flex flex-col h-full p-6 md:p-10">
+                <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+                    <h2 class="text-2xl md:text-3xl font-bold neon-text-purple">
+                        <i class="fas fa-chart-line mr-2"></i> Rekap Nilai Kelas
+                    </h2>
+                    <button id="btn-exit-dashboard" class="text-gray-400 hover:text-red-400 transition-colors">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700 text-center">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Total Peserta</div>
+                    <div id="stat-total" class="text-2xl font-bold text-cyan-400">0</div>
+                </div>
+                <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700 text-center">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Rata-rata Skor</div>
+                    <div id="stat-avg" class="text-2xl font-bold text-purple-400">0</div>
+                </div>
+                <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700 text-center">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Skor Tertinggi</div>
+                    <div id="stat-high" class="text-2xl font-bold text-green-400">0</div>
+                </div>
+                <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700 text-center">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Lulus (>70)</div>
+                    <div id="stat-pass" class="text-2xl font-bold text-yellow-400">0%</div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex flex-col md:flex-row justify-between gap-4 mb-4">
+                <div class="relative w-full md:w-1/3">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-gray-500"></i>
+                    <input type="text" id="search-dashboard" placeholder="Cari nama atau kelas..." class="w-full bg-gray-800 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors">
+                </div>
+                <div class="flex gap-2">
+                    <button id="btn-sort" class="bg-gray-800 border border-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                        <i class="fas fa-sort-numeric-down mr-1"></i> Urut Skor
+                    </button>
+                    <button id="btn-export" class="bg-green-600/20 border border-green-500 text-green-400 hover:bg-green-600 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                        <i class="fas fa-file-excel mr-1"></i> Unduh CSV
+                    </button>
+                    <button id="btn-reset-data" class="bg-red-600/20 border border-red-500 text-red-400 hover:bg-red-600 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors" title="Hapus Semua Data">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="flex-grow overflow-auto bg-gray-900/50 rounded-xl border border-gray-700">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-400 uppercase bg-gray-800/80 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3">No</th>
+                            <th class="px-4 py-3">Nama</th>
+                            <th class="px-4 py-3">Kelas</th>
+                            <th class="px-4 py-3">Skor</th>
+                            <th class="px-4 py-3 hidden md:table-cell">B/S</th>
+                            <th class="px-4 py-3 hidden md:table-cell">Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboard-tbody">
+                        <!-- Data injected via JS -->
+                        <tr><td colspan="6" class="text-center py-4 text-gray-500 italic">Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- FIREBASE SETUP ---
+        let db, quizCollection, currentUserAuth;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'math-graph-quiz';
+        
+        async function initFirebase() {
+            try {
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                const app = initializeApp(firebaseConfig);
+                const auth = getAuth(app);
+                db = getFirestore(app);
+                
+                // CRITICAL RULE 1: Strict Paths
+                quizCollection = collection(db, 'artifacts', appId, 'public', 'data', 'quiz_results');
+
+                // CRITICAL RULE 3: Auth Before Queries
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    currentUserAuth = user;
+                    if(user && document.getElementById('dashboard-view').classList.contains('hidden') === false) {
+                        fetchDashboardData(); // Fetch only if dashboard is open
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase init failed, continuing in offline/demo mode.", error);
+            }
+        }
+        initFirebase();
+
+        // --- SVG ASSETS FOR GRAPHS ---
+        const svgAxes = `
+            <line x1="10" y1="100" x2="190" y2="100" stroke="#555" stroke-width="2"/>
+            <line x1="100" y1="10" x2="100" y2="190" stroke="#555" stroke-width="2"/>
+            <text x="185" y="115" fill="#888" font-size="12">x</text>
+            <text x="85" y="15" fill="#888" font-size="12">y</text>
+        `;
+        const svgLog = `<svg viewBox="0 0 200 200" class="w-full h-full">${svgAxes}<path d="M 102 190 Q 105 120 120 80 T 190 50" fill="none" stroke="#e81cff" stroke-width="3"/></svg>`;
+        const svgRational = `<svg viewBox="0 0 200 200" class="w-full h-full">${svgAxes}<line x1="130" y1="10" x2="130" y2="190" stroke="#f00" stroke-width="1" stroke-dasharray="4"/><path d="M 135 10 Q 140 80 190 90" fill="none" stroke="#00f0ff" stroke-width="3"/><path d="M 10 110 Q 110 120 125 190" fill="none" stroke="#00f0ff" stroke-width="3"/></svg>`;
+        const svgPiecewise = `<svg viewBox="0 0 200 200" class="w-full h-full">${svgAxes}<line x1="20" y1="140" x2="80" y2="140" stroke="#4ade80" stroke-width="3"/><circle cx="80" cy="140" r="4" fill="#4ade80"/><circle cx="80" cy="80" r="4" fill="none" stroke="#4ade80" stroke-width="2"/><line x1="80" y1="80" x2="180" y2="40" stroke="#4ade80" stroke-width="3"/></svg>`;
+
+        // --- QUIZ DATA ---
+        const questions = [
+            // Pilihan Ganda (15 Soal)
+            { type: 'MCQ', cat: 'Fungsi Akar', text: 'Grafik fungsi y = &radic;x memiliki daerah asal (domain) ....', options: ['x ≤ 0', 'x ≥ 0', 'Semua bilangan real', 'x ≠ 0', 'x > 0'], ans: 1 },
+            { type: 'MCQ', cat: 'Fungsi Eksponensial', text: 'Grafik fungsi eksponensial y = 2<sup>x</sup> memiliki sifat matematis berupa ....', options: ['Monoton menurun', 'Konstan / Tetap', 'Monoton meningkat', 'Periodik', 'Berfluktuasi'], ans: 2 },
+            { type: 'MCQ', cat: 'Fungsi Logaritma', text: 'Perhatikan grafik berikut. Kurva melengkung yang mendekati sumbu y negatif sebagai asimtot ini merupakan grafik fungsi....', visual: svgLog, options: ['Eksponensial', 'Kuadrat', 'Akar', 'Logaritma', 'Linier'], ans: 3 },
+            { type: 'MCQ', cat: 'Fungsi Nilai Mutlak', text: 'Titik puncak (minimum) dari grafik fungsi nilai mutlak y = |x - 2| berada pada koordinat ....', options: ['(0, 2)', '(-2, 0)', '(2, 0)', '(0, -2)', '(2, 2)'], ans: 2 },
+            { type: 'MCQ', cat: 'Fungsi Tangga', text: 'Fungsi yang memetakan bilangan real ke bilangan bulat terbesar yang lebih kecil atau sama dengan x disebut ....', options: ['Fungsi Atap (Ceiling)', 'Fungsi Tangga (Floor)', 'Fungsi Identitas', 'Fungsi Linier', 'Fungsi Kuadrat'], ans: 1 },
+            { type: 'MCQ', cat: 'Fungsi Piecewise', text: 'Grafik di bawah ini terdiri dari potongan garis horizontal dan garis miring. Ini merupakan contoh fungsi ....', visual: svgPiecewise, options: ['Piecewise (Sepotong-sepotong)', 'Logaritma', 'Trigonometri', 'Rasional', 'Eksponensial'], ans: 0 },
+            { type: 'MCQ', cat: 'Fungsi Rasional', text: 'Garis asimtot vertikal dari fungsi rasional f(x) = 1 / (x - 3) adalah ....', options: ['y = 3', 'x = 3', 'x = -3', 'y = 0', 'x = 0'], ans: 1 },
+            { type: 'MCQ', cat: 'Transformasi', text: 'Transformasi fungsi y = &radic;(x + 4) akan menggeser grafik dasar y = &radic;x ke arah ....', options: ['Kanan 4 satuan', 'Kiri 4 satuan', 'Atas 4 satuan', 'Bawah 4 satuan', 'Pencerminan sumbu y'], ans: 1 },
+            { type: 'MCQ', cat: 'Fungsi Eksponensial', text: 'Titik potong grafik fungsi y = 3<sup>x</sup> terhadap sumbu y adalah ....', options: ['(0, 3)', '(1, 0)', '(0, 0)', '(0, 1)', '(3, 0)'], ans: 3 },
+            { type: 'MCQ', cat: 'Fungsi Logaritma', text: 'Agar fungsi logaritma y = log(x + 1) terdefinisi, maka domain yang memenuhi adalah ....', options: ['x > -1', 'x ≥ -1', 'x > 1', 'x > 0', 'x ≠ -1'], ans: 0 },
+            { type: 'MCQ', cat: 'Fungsi Nilai Mutlak', text: 'Bentuk grafik fungsi y = -|x| berupa huruf V yang terbuka ke arah ....', options: ['Kanan', 'Kiri', 'Atas', 'Bawah', 'Samping'], ans: 3 },
+            { type: 'MCQ', cat: 'Fungsi Rasional', text: 'Perhatikan grafik berikut. Terdapat asimtot vertikal dan horizontal. Kurva ini mewakili fungsi ....', visual: svgRational, options: ['Logaritma', 'Akar', 'Rasional', 'Eksponensial', 'Tangga'], ans: 2 },
+            { type: 'MCQ', cat: 'Konteks Aplikasi', text: 'Fenomena peluruhan radioaktif dalam fisika paling tepat dimodelkan menggunakan grafik fungsi ....', options: ['Eksponensial Menurun', 'Logaritma', 'Linier', 'Kuadrat', 'Trigonometri'], ans: 0 },
+            { type: 'MCQ', cat: 'Konteks Aplikasi', text: 'Biaya parkir Rp5.000 untuk 1 jam pertama, dan bertambah tetap untuk jam berikutnya, dihitung penuh per jam. Grafiknya membentuk fungsi ....', options: ['Piecewise', 'Tangga', 'Akar', 'Mutlak', 'Linier'], ans: 1 },
+            { type: 'MCQ', cat: 'Konteks Aplikasi', text: 'Sistem tarif pajak yang persentasenya berbeda-beda untuk setiap rentang penghasilan tertentu adalah penerapan nyata dari fungsi ....', options: ['Eksponensial', 'Logaritma', 'Tangga', 'Piecewise', 'Rasional'], ans: 3 },
+            // Benar/Salah (5 Soal)
+            { type: 'TF', cat: 'Fungsi Nilai Mutlak', text: 'Grafik fungsi nilai mutlak dasar y = |x| selalu berbentuk seperti huruf "V".', options: ['BENAR', 'SALAH'], ans: 0 },
+            { type: 'TF', cat: 'Logaritma & Eksponen', text: 'Fungsi logaritma merupakan invers (kebalikan) dari fungsi eksponensial.', options: ['BENAR', 'SALAH'], ans: 0 },
+            { type: 'TF', cat: 'Fungsi Tangga', text: 'Grafik fungsi tangga bersifat kontinu dan garisnya tidak pernah terputus.', options: ['BENAR', 'SALAH'], ans: 1 },
+            { type: 'TF', cat: 'Fungsi Rasional', text: 'Grafik fungsi rasional dasar y = 1/x selalu memotong sumbu x dan sumbu y.', options: ['BENAR', 'SALAH'], ans: 1 },
+            { type: 'TF', cat: 'Fungsi Piecewise', text: 'Fungsi piecewise selalu didefinisikan oleh lebih dari satu aturan atau persamaan pada interval domain yang berbeda.', options: ['BENAR', 'SALAH'], ans: 0 }
+        ];
+
+        // --- STATE VARIABLES ---
+        let currentStudent = { nama: '', kelas: '' };
+        let currentQuestionIdx = 0;
+        let userAnswers = new Array(questions.length).fill(null);
+        let timeRemaining = 25 * 60; // 25 minutes in seconds
+        let timerInterval;
+        let startTime;
+        let dashboardData = []; // To cache fetched data
+        let sortDesc = true;
+
+        // --- DOM ELEMENTS ---
+        const views = {
+            login: document.getElementById('login-view'),
+            quiz: document.getElementById('quiz-view'),
+            result: document.getElementById('result-view'),
+            dashboard: document.getElementById('dashboard-view')
+        };
+        const modal = document.getElementById('alert-modal');
+
+        // --- CORE FUNCTIONS ---
+        function switchView(viewName) {
+            Object.values(views).forEach(v => v.classList.add('hidden'));
+            views[viewName].classList.remove('hidden');
+            // Trigger reflow for animation
+            void views[viewName].offsetWidth;
+        }
+
+        window.showAlert = function(title, message, isSuccess = false) {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-message').innerText = message;
+            const icon = document.getElementById('alert-icon');
+            if(isSuccess) {
+                icon.className = "fas fa-check-circle text-5xl text-green-400 mb-4 drop-shadow-[0_0_10px_rgba(74,222,128,0.6)]";
+            } else {
+                icon.className = "fas fa-exclamation-triangle text-5xl text-yellow-400 mb-4 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]";
+            }
+            modal.classList.remove('hidden');
+        }
+
+        window.closeAlert = function() {
+            modal.classList.add('hidden');
+        }
+
+        // --- TIMER LOGIC ---
+        function startTimer() {
+            const timerEl = document.getElementById('timer');
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                let m = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+                let s = (timeRemaining % 60).toString().padStart(2, '0');
+                timerEl.innerText = `${m}:${s}`;
+                
+                if (timeRemaining <= 300) {
+                    timerEl.classList.add('text-red-400', 'animate-pulse');
+                }
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    finishQuiz(true); // Auto finish
+                }
+            }, 1000);
+        }
+
+        // --- QUIZ RENDERING ---
+        function renderQuestion() {
+            const q = questions[currentQuestionIdx];
+            
+            // Update Header
+            document.getElementById('progress-text').innerText = `${currentQuestionIdx + 1}/${questions.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentQuestionIdx + 1) / questions.length) * 100}%`;
+            document.getElementById('q-category').innerText = q.cat;
+            document.getElementById('q-text').innerHTML = `${currentQuestionIdx + 1}. ${q.text}`;
+
+            // Visuals
+            const visualContainer = document.getElementById('q-visual-container');
+            const visualContent = document.getElementById('q-visual-content');
+            if (q.visual) {
+                visualContent.innerHTML = q.visual;
+                visualContainer.classList.remove('hidden');
+                visualContainer.classList.add('flex');
+            } else {
+                visualContainer.classList.add('hidden');
+                visualContainer.classList.remove('flex');
+            }
+
+            // Options
+            const optContainer = document.getElementById('options-container');
+            optContainer.innerHTML = '';
+            
+            // Adjust grid for T/F vs MCQ
+            if (q.type === 'TF') {
+                optContainer.className = "grid grid-cols-1 md:grid-cols-2 gap-6 mt-8";
+            } else {
+                optContainer.className = "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4";
+            }
+
+            const letters = ['A', 'B', 'C', 'D', 'E'];
+            q.options.forEach((optText, index) => {
+                const btn = document.createElement('div');
+                btn.className = `quiz-option glass-card rounded-xl p-4 border border-gray-600 flex items-center gap-4 ${userAnswers[currentQuestionIdx] === index ? 'selected' : ''}`;
+                
+                let prefix = q.type === 'MCQ' ? `<div class="w-8 h-8 rounded-full bg-gray-800 border border-gray-500 flex items-center justify-center font-bold text-sm group-hover:bg-cyan-600">${letters[index]}</div>` : '';
+                
+                if(q.type === 'TF') {
+                    prefix = index === 0 ? `<i class="fas fa-check text-green-400 text-xl"></i>` : `<i class="fas fa-times text-red-400 text-xl"></i>`;
+                    btn.classList.add('justify-center', 'text-xl', 'font-bold', 'py-6');
+                }
+
+                btn.innerHTML = `${prefix} <div class="flex-1 ${q.type==='TF'?'text-center':''}">${optText}</div>`;
+                
+                btn.onclick = () => selectOption(index);
+                optContainer.appendChild(btn);
+            });
+
+            // Navigation Buttons
+            document.getElementById('btn-prev').style.visibility = currentQuestionIdx === 0 ? 'hidden' : 'visible';
+            
+            if (currentQuestionIdx === questions.length - 1) {
+                document.getElementById('btn-next').classList.add('hidden');
+                document.getElementById('btn-finish').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-next').classList.remove('hidden');
+                document.getElementById('btn-finish').classList.add('hidden');
+            }
+        }
+
+        function selectOption(index) {
+            userAnswers[currentQuestionIdx] = index;
+            renderQuestion(); // Re-render to show selection
+        }
+
+        // --- LOGIC: FINISH QUIZ ---
+        window.finishQuiz = async function(isTimeout = false) {
+            // Check if all answered (only if not timeout)
+            if (!isTimeout && userAnswers.includes(null)) {
+                const unanswered = userAnswers.filter(a => a === null).length;
+                showAlert("Belum Selesai", `Terdapat ${unanswered} soal yang belum dijawab. Mohon lengkapi terlebih dahulu.`);
+                return;
+            }
+
+            clearInterval(timerInterval);
+            const timeSpent = (25 * 60) - timeRemaining;
+            let m = Math.floor(timeSpent / 60);
+            let s = timeSpent % 60;
+            const timeString = `${m}m ${s}s`;
+
+            // Calculate Score
+            let correct = 0;
+            userAnswers.forEach((ans, idx) => {
+                if (ans === questions[idx].ans) correct++;
+            });
+            const incorrect = questions.length - correct;
+            const score = correct * 5; // 20 * 5 = 100
+
+            // Predicate
+            let pred = ""; let predColor = ""; let mascotEmotion = "";
+            if(score >= 90) { pred = "SANGAT BAIK"; predColor = "text-cyan-400"; mascotEmotion = "star"; }
+            else if(score >= 80) { pred = "BAIK"; predColor = "text-green-400"; mascotEmotion = "smile"; }
+            else if(score >= 70) { pred = "CUKUP"; predColor = "text-yellow-400"; mascotEmotion = "neutral"; }
+            else { pred = "PERLU BELAJAR LAGI"; predColor = "text-red-400"; mascotEmotion = "sad"; }
+
+            // Update UI
+            document.getElementById('result-name-class').innerText = `${currentStudent.nama} - ${currentStudent.kelas}`;
+            
+            // Animate Score Counting
+            animateValue("result-score", 0, score, 1500);
+            
+            const predEl = document.getElementById('result-predicate');
+            predEl.innerText = pred;
+            predEl.className = `text-xl font-bold mt-2 ${predColor}`;
+            
+            document.getElementById('result-correct').innerText = correct;
+            document.getElementById('result-incorrect').innerText = incorrect;
+
+            // Mascot emotion SVG
+            const mascotContainer = document.getElementById('result-mascot');
+            let eyePath = "M 65 75 Q 80 80 95 75 M 105 75 Q 120 80 135 75"; // neutral
+            if(mascotEmotion === 'smile') eyePath = "M 65 75 Q 80 65 95 75 M 105 75 Q 120 65 135 75";
+            if(mascotEmotion === 'star') eyePath = "M 70 70 L 80 85 L 90 70 Z M 110 70 L 120 85 L 130 70 Z";
+            if(mascotEmotion === 'sad') eyePath = "M 65 80 Q 80 70 95 80 M 105 80 Q 120 70 135 80";
+
+            mascotContainer.innerHTML = `
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="50" y="50" width="100" height="80" rx="20" fill="#1e293b" stroke="#0ea5e9" stroke-width="4"/>
+                    <rect x="60" y="65" width="80" height="30" rx="10" fill="#0f172a" stroke="#3b82f6" stroke-width="2"/>
+                    <path d="${eyePath}" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" fill="none"/>
+                </svg>
+            `;
+
+            // Messages
+            const msgEl = document.getElementById('result-message');
+            if(score >= 80) {
+                msgEl.innerText = `"Luar Biasa! Pemahamanmu tentang grafik fungsi sudah sangat mantap."`;
+                createConfetti();
+            } else if(score >= 70) {
+                msgEl.innerText = `"Kerja Bagus! Sedikit lagi latihan, kamu pasti bisa lebih sempurna."`;
+            } else {
+                msgEl.innerText = `"Jangan Menyerah! Matematika adalah tentang proses. Mari pelajari kembali materi grafiknya."`;
+                msgEl.classList.remove('text-purple-300');
+                msgEl.classList.add('text-red-300');
+            }
+
+            switchView('result');
+
+            // Save Data to Firebase
+            if(currentUserAuth && quizCollection) {
+                try {
+                    await addDoc(quizCollection, {
+                        nama: currentStudent.nama,
+                        kelas: currentStudent.kelas,
+                        skor: score,
+                        benar: correct,
+                        salah: incorrect,
+                        waktu: timeString,
+                        timestamp: Date.now(),
+                        uid: currentUserAuth.uid
+                    });
+                    console.log("Data saved to Firestore.");
+                } catch (e) {
+                    console.error("Error saving data: ", e);
+                }
+            }
+
+            // --- TAMBAHAN: Simpan Data ke Google Sheets secara Real-time ---
+            // Ganti URL di bawah ini dengan URL Web App dari langkah ke-3 di file panduan
+            const scriptURLSheets = 'https://script.google.com/macros/s/AKfycbwdqBvD2cKSK2Nh4cGyyWsABW0Bjz2PgczBfhStGECjObCvNdfsHygt-RCHeAqExuX4zQ/exec'; 
+            
+            if(scriptURLSheets !== 'https://script.google.com/macros/s/AKfycbwdqBvD2cKSK2Nh4cGyyWsABW0Bjz2PgczBfhStGECjObCvNdfsHygt-RCHeAqExuX4zQ/exec') {
+                // Mengemas data agar cocok dikirim ke Google Apps Script tanpa error CORS
+                const formData = new URLSearchParams();
+                formData.append('nama', currentStudent.nama);
+                formData.append('kelas', currentStudent.kelas);
+                formData.append('skor', score);
+                formData.append('benar', correct);
+                formData.append('salah', incorrect);
+                formData.append('waktu', timeString);
+
+                fetch(scriptURLSheets, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => console.log("Data berhasil terkirim ke Google Sheets!"))
+                .catch(error => console.error("Error mengirim ke Sheets:", error));
+            }
+        }
+
+        // --- ANIMATIONS ---
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function createConfetti() {
+            const colors = ['#22d3ee', '#8b5cf6', '#ec4899', '#facc15', '#4ade80'];
+            for(let i=0; i<100; i++) {
+                let conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.top = '-10px';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                document.body.appendChild(conf);
+
+                let duration = Math.random() * 3 + 2; // 2-5s
+                let tx = (Math.random() - 0.5) * 500;
+                
+                conf.animate([
+                    { transform: `translate3d(0,0,0) rotate(0deg)`, opacity: 1 },
+                    { transform: `translate3d(${tx}px, 100vh, 0) rotate(${Math.random()*720}deg)`, opacity: 0 }
+                ], { duration: duration * 1000, easing: 'cubic-bezier(.37,0,.63,1)' });
+
+                setTimeout(() => conf.remove(), duration * 1000);
+            }
+        }
+
+        // --- DASHBOARD LOGIC ---
+        function fetchDashboardData() {
+            if(!currentUserAuth || !quizCollection) return;
+            
+            // Listen for realtime updates
+            onSnapshot(quizCollection, (snapshot) => {
+                dashboardData = [];
+                snapshot.forEach(doc => {
+                    dashboardData.push({ id: doc.id, ...doc.data() });
+                });
+                renderDashboardTable(dashboardData);
+                updateDashboardStats(dashboardData);
+            }, (error) => {
+                console.error("Error fetching data:", error);
+            });
+        }
+
+        function renderDashboardTable(data) {
+            const tbody = document.getElementById('dashboard-tbody');
+            tbody.innerHTML = '';
+            
+            if(data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-500">Belum ada data peserta.</td></tr>`;
+                return;
+            }
+
+            data.forEach((row, idx) => {
+                let badgeClass = row.skor >= 70 ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'bg-red-500/20 text-red-400 border-red-500/50';
+                
+                let tr = document.createElement('tr');
+                tr.className = "border-b border-gray-700/50 hover:bg-gray-800/50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-4 py-3">${idx + 1}</td>
+                    <td class="px-4 py-3 font-medium">${row.nama}</td>
+                    <td class="px-4 py-3">${row.kelas}</td>
+                    <td class="px-4 py-3">
+                        <span class="border px-2 py-1 rounded text-xs font-bold ${badgeClass}">${row.skor}</span>
+                    </td>
+                    <td class="px-4 py-3 hidden md:table-cell text-xs">
+                        <span class="text-green-400">${row.benar}B</span> / <span class="text-red-400">${row.salah}S</span>
+                    </td>
+                    <td class="px-4 py-3 hidden md:table-cell text-xs text-gray-400">${row.waktu}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateDashboardStats(data) {
+            const total = data.length;
+            document.getElementById('stat-total').innerText = total;
+            
+            if(total === 0) {
+                document.getElementById('stat-avg').innerText = '0';
+                document.getElementById('stat-high').innerText = '0';
+                document.getElementById('stat-pass').innerText = '0%';
+                return;
+            }
+
+            const totalScore = data.reduce((acc, curr) => acc + curr.skor, 0);
+            const avg = (totalScore / total).toFixed(1);
+            const high = Math.max(...data.map(d => d.skor));
+            const passed = data.filter(d => d.skor >= 70).length;
+            const passPercentage = Math.round((passed / total) * 100);
+
+            document.getElementById('stat-avg').innerText = avg;
+            document.getElementById('stat-high').innerText = high;
+            document.getElementById('stat-pass').innerText = `${passPercentage}%`;
+        }
+
+        function filterAndSortData() {
+            const query = document.getElementById('search-dashboard').value.toLowerCase();
+            let filtered = dashboardData.filter(d => 
+                d.nama.toLowerCase().includes(query) || d.kelas.toLowerCase().includes(query)
+            );
+
+            filtered.sort((a, b) => {
+                if(sortDesc) return b.skor - a.skor;
+                return a.skor - b.skor;
+            });
+
+            renderDashboardTable(filtered);
+        }
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Login & Start
+            document.getElementById('btn-start').addEventListener('click', () => {
+                const nama = document.getElementById('input-nama').value.trim();
+                const kelas = document.getElementById('input-kelas').value.trim();
+
+                if(!nama || !kelas) {
+                    showAlert("Data Tidak Lengkap", "Hai, robot tidak bisa mencatat skormu jika nama dan kelas kosong. Tolong diisi ya!");
+                    return;
+                }
+
+                currentStudent = { nama, kelas };
+                
+                // Reset State
+                currentQuestionIdx = 0;
+                userAnswers.fill(null);
+                timeRemaining = 25 * 60;
+                
+                switchView('quiz');
+                startTimer();
+                renderQuestion();
+            });
+
+            // Navigation
+            document.getElementById('btn-prev').addEventListener('click', () => {
+                if(currentQuestionIdx > 0) {
+                    currentQuestionIdx--;
+                    renderQuestion();
+                }
+            });
+
+            document.getElementById('btn-next').addEventListener('click', () => {
+                if(currentQuestionIdx < questions.length - 1) {
+                    currentQuestionIdx++;
+                    renderQuestion();
+                }
+            });
+
+            document.getElementById('btn-finish').addEventListener('click', () => finishQuiz(false));
+
+            document.getElementById('btn-back-home').addEventListener('click', () => {
+                document.getElementById('input-nama').value = '';
+                document.getElementById('input-kelas').value = '';
+                switchView('login');
+            });
+
+            // Admin / Dashboard Access
+            document.getElementById('btn-admin-access').addEventListener('click', () => {
+                switchView('dashboard');
+                if(currentUserAuth) fetchDashboardData();
+            });
+            document.getElementById('btn-exit-dashboard').addEventListener('click', () => {
+                switchView('login');
+            });
+
+            // Dashboard Controls
+            document.getElementById('search-dashboard').addEventListener('input', filterAndSortData);
+            
+            document.getElementById('btn-sort').addEventListener('click', () => {
+                sortDesc = !sortDesc;
+                const icon = sortDesc ? 'fa-sort-numeric-down' : 'fa-sort-numeric-up';
+                document.getElementById('btn-sort').innerHTML = `<i class="fas ${icon} mr-1"></i> Urut Skor`;
+                filterAndSortData();
+            });
+
+            document.getElementById('btn-export').addEventListener('click', () => {
+                if(dashboardData.length === 0) {
+                    showAlert("Gagal", "Tidak ada data untuk diunduh.");
+                    return;
+                }
+                
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "No,Nama,Kelas,Skor,Benar,Salah,Waktu,Timestamp\n";
+                
+                let toExport = [...dashboardData].sort((a,b) => b.skor - a.skor);
+                toExport.forEach((row, i) => {
+                    let dateStr = new Date(row.timestamp).toLocaleString('id-ID');
+                    let rowStr = `${i+1},"${row.nama}","${row.kelas}",${row.skor},${row.benar},${row.salah},"${row.waktu}","${dateStr}"`;
+                    csvContent += rowStr + "\n";
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "Rekap_Nilai_Math_Graph.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+            document.getElementById('btn-reset-data').addEventListener('click', async () => {
+                if(dashboardData.length === 0) return;
+                
+                // Confirm Modal Hack (using custom alert structure)
+                document.getElementById('alert-title').innerText = "Konfirmasi Hapus";
+                document.getElementById('alert-message').innerText = "Yakin ingin menghapus seluruh data siswa? Aksi ini tidak dapat dibatalkan.";
+                const icon = document.getElementById('alert-icon');
+                icon.className = "fas fa-trash-alt text-5xl text-red-500 mb-4 drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]";
+                
+                const modalBox = document.querySelector('#alert-modal > div');
+                // Temporarily replace button
+                const oldBtn = modalBox.querySelector('button');
+                oldBtn.style.display = 'none';
+                
+                const btnContainer = document.createElement('div');
+                btnContainer.className = "flex gap-4 justify-center mt-6";
+                btnContainer.id = "temp-confirm-btns";
+                
+                const btnCancel = document.createElement('button');
+                btnCancel.className = "bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-full";
+                btnCancel.innerText = "Batal";
+                
+                const btnOk = document.createElement('button');
+                btnOk.className = "bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.5)]";
+                btnOk.innerText = "Hapus Semua";
+
+                btnContainer.appendChild(btnCancel);
+                btnContainer.appendChild(btnOk);
+                modalBox.appendChild(btnContainer);
+                
+                modal.classList.remove('hidden');
+
+                btnCancel.onclick = () => {
+                    modal.classList.add('hidden');
+                    btnContainer.remove();
+                    oldBtn.style.display = 'inline-block';
+                };
+
+                btnOk.onclick = async () => {
+                    btnOk.innerText = "Menghapus...";
+                    try {
+                        // Delete all docs in the cached dashboardData array
+                        const deletePromises = dashboardData.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'quiz_results', d.id)));
+                        await Promise.all(deletePromises);
+                        
+                        modal.classList.add('hidden');
+                        btnContainer.remove();
+                        oldBtn.style.display = 'inline-block';
+                        showAlert("Berhasil", "Semua data telah direset.", true);
+                    } catch (error) {
+                        console.error("Error clearing data: ", error);
+                        showAlert("Error", "Terjadi kesalahan saat menghapus data.");
+                        btnContainer.remove();
+                        oldBtn.style.display = 'inline-block';
+                    }
+                };
+            });
+        });
+    </script>
+</body>
+</html>
